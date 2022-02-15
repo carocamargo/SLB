@@ -218,8 +218,8 @@ for ip, period in enumerate(periods):
         da = xr.Dataset(
             data_vars={
                 "NM_score": (("periods", "ICs", "lat", "lon"), scores),
-                "best_trend": (("periods", "ICs", "lat", "lon"), best_trends),
-                "best_unc": (("periods", "ICs", "lat", "lon"), best_uncs),
+                "best_trend": (("periods", "ICs", "lat", "lon"), best_trends/1000),
+                "best_unc": (("periods", "ICs", "lat", "lon"), best_uncs/1000),
             },
             coords={
                 "ICs": inds,

@@ -43,11 +43,11 @@ for j, title in enumerate(reconstr):
     if j == 0:
         ds = xr.Dataset(
             data_vars={
-                "sla_{}".format(name): (("period", "lat", "lon"), trends),
-                "sla_unc_{}".format(name): (("period", "lat", "lon"), uncs),
+                "sla_{}".format(name): (("periods", "lat", "lon"), trends),
+                "sla_unc_{}".format(name): (("periods", "lat", "lon"), uncs),
             },
             coords={
-                "period": [
+                "periods": [
                     "{}-{}".format(period[0], period[1] - 1) for period in periods
                 ],
                 "lat": np.array(df["lat"]).reshape(dimlat, dimlon)[:, 0],
@@ -55,21 +55,21 @@ for j, title in enumerate(reconstr):
             },
         )
     else:
-        ds["sla_{}".format(name)] = (["period", "lat", "lon"], trends)
-        ds["sla_unc_{}".format(name)] = (["period", "lat", "lon"], uncs)
+        ds["sla_{}".format(name)] = (["periods", "lat", "lon"], trends)
+        ds["sla_unc_{}".format(name)] = (["periods", "lat", "lon"], uncs)
 
-data = np.zeros((len(names), len(ds.period), len(ds.lat), len(ds.lon)))
-data2 = np.zeros((len(names), len(ds.period), len(ds.lat), len(ds.lon)))
+data = np.zeros((len(names), len(ds.periods), len(ds.lat), len(ds.lon)))
+data2 = np.zeros((len(names), len(ds.periods), len(ds.lat), len(ds.lon)))
 for i, v in enumerate(names):
     data[i] = np.array(ds["sla_" + v])
     data2[i] = np.array(ds["sla_unc_" + v])
     #% %
-ds["sla_ENS"] = (["period", "lat", "lon"], np.nanmean(data, axis=0))
-ds["sla_unc_ENS"] = (["period", "lat", "lon"], np.nanmean(data2, axis=0))
+ds["sla_ENS"] = (["periods", "lat", "lon"], np.nanmean(data, axis=0))
+ds["sla_unc_ENS"] = (["periods", "lat", "lon"], np.nanmean(data2, axis=0))
 
 names.append("ENS")
-data = np.zeros((len(names), len(ds.period), len(ds.lat), len(ds.lon)))
-data2 = np.zeros((len(names), len(ds.period), len(ds.lat), len(ds.lon)))
+data = np.zeros((len(names), len(ds.periods), len(ds.lat), len(ds.lon)))
+data2 = np.zeros((len(names), len(ds.periods), len(ds.lat), len(ds.lon)))
 for i, v in enumerate(names):
     data[i] = np.array(ds["sla_" + v])
     data2[i] = np.array(ds["sla_unc_" + v])
@@ -81,8 +81,8 @@ for i, v in enumerate(names):
 #     data[i] = np.array(ds[v])
 
 ds = ds.assign_coords({"names": names})
-ds["SLA"] = (["names", "period", "lat", "lon"], data)
-ds["SLA_UNC"] = (["names", "period", "lat", "lon"], data2)
+ds["SLA"] = (["names", "periods", "lat", "lon"], data)
+ds["SLA_UNC"] = (["names", "periods", "lat", "lon"], data2)
 
 path_save = "/Volumes/LaCie_NIOZ/data/budget/"
 ds.to_netcdf(path_save + "barystatic_rsl_trends.nc")
@@ -118,11 +118,11 @@ for j, title in enumerate(reconstr):
     if j == 0:
         ds = xr.Dataset(
             data_vars={
-                "sla_{}".format(name): (("period", "lat", "lon"), trends),
-                "sla_unc_{}".format(name): (("period", "lat", "lon"), uncs),
+                "sla_{}".format(name): (("periods", "lat", "lon"), trends),
+                "sla_unc_{}".format(name): (("periods", "lat", "lon"), uncs),
             },
             coords={
-                "period": [
+                "periods": [
                     "{}-{}".format(period[0], period[1] - 1) for period in periods
                 ],
                 "lat": np.array(df["lat"]).reshape(dimlat, dimlon)[:, 0],
@@ -130,21 +130,21 @@ for j, title in enumerate(reconstr):
             },
         )
     else:
-        ds["sla_{}".format(name)] = (["period", "lat", "lon"], trends)
-        ds["sla_unc_{}".format(name)] = (["period", "lat", "lon"], uncs)
+        ds["sla_{}".format(name)] = (["periods", "lat", "lon"], trends)
+        ds["sla_unc_{}".format(name)] = (["periods", "lat", "lon"], uncs)
 
-data = np.zeros((len(names), len(ds.period), len(ds.lat), len(ds.lon)))
-data2 = np.zeros((len(names), len(ds.period), len(ds.lat), len(ds.lon)))
+data = np.zeros((len(names), len(ds.periods), len(ds.lat), len(ds.lon)))
+data2 = np.zeros((len(names), len(ds.periods), len(ds.lat), len(ds.lon)))
 for i, v in enumerate(names):
     data[i] = np.array(ds["sla_" + v])
     data2[i] = np.array(ds["sla_unc_" + v])
     #% %
-ds["sla_ENS"] = (["period", "lat", "lon"], np.nanmean(data, axis=0))
-ds["sla_unc_ENS"] = (["period", "lat", "lon"], np.nanmean(data2, axis=0))
+ds["sla_ENS"] = (["periods", "lat", "lon"], np.nanmean(data, axis=0))
+ds["sla_unc_ENS"] = (["periods", "lat", "lon"], np.nanmean(data2, axis=0))
 
 names.append("ENS")
-data = np.zeros((len(names), len(ds.period), len(ds.lat), len(ds.lon)))
-data2 = np.zeros((len(names), len(ds.period), len(ds.lat), len(ds.lon)))
+data = np.zeros((len(names), len(ds.periods), len(ds.lat), len(ds.lon)))
+data2 = np.zeros((len(names), len(ds.periods), len(ds.lat), len(ds.lon)))
 for i, v in enumerate(names):
     data[i] = np.array(ds["sla_" + v])
     data2[i] = np.array(ds["sla_unc_" + v])
@@ -156,8 +156,8 @@ for i, v in enumerate(names):
 #     data[i] = np.array(ds[v])
 
 ds = ds.assign_coords({"names": names})
-ds["SLA"] = (["names", "period", "lat", "lon"], data)
-ds["SLA_UNC"] = (["names", "period", "lat", "lon"], data2)
+ds["SLA"] = (["names", "periods", "lat", "lon"], data)
+ds["SLA_UNC"] = (["names", "periods", "lat", "lon"], data2)
 
 path_save = "/Volumes/LaCie_NIOZ/data/budget/"
 ds.to_netcdf(path_save + "barystatic_asl_trends.nc")

@@ -11,107 +11,19 @@ Created on Mon Feb 14 11:34:50 2022
 import numpy as np
 import xarray as xr
 
-# import sys
-# sys.path.append("~/Documents/py_scripts/")
+import sys
+sys.path.append("/Users/ccamargo/Documents/github/SLB/")
 # import utils_SL as sl
-import os
+# import utils_SLB
+# import os
 import cmocean as cm
 import matplotlib.pyplot as plt
 
-#%%
-def sel_best_NM(IC, field, field2):
-    """Given a field that has dimensions of len(nm),len(lat),len(lon),
-    and an information critera that has the same dimensions, select the best noise model for this field.
-    Return the selected field and the scoring of the noise models, both with dimensions (len(lat),len(lon))
-    """
-    dimnm, dimlat, dimlon = field.shape
-    field = field.reshape(dimnm, dimlat * dimlon)
-    field2 = field2.reshape(dimnm, dimlat * dimlon)
-
-    mask = np.array(field[0, :])
-    IC = IC.reshape(dimnm, dimlat * dimlon)
-
-    best_field = np.zeros((dimlat * dimlon))
-    best_field.fill(np.nan)
-    score = np.full_like(best_field, np.nan)
-    best_field2 = np.full_like(best_field, np.nan)
-
-    for icoord in range(dimlat * dimlon):
-        if np.isfinite(mask[icoord]):
-            target = IC[:, icoord]
-            ic = np.zeros((dimnm))
-            logic = np.zeros((dimnm))
-
-            for inm in range(dimnm):
-                logic[inm] = np.exp((np.nanmin(target) - target[inm]) / 2)
-                if logic[inm] > 0.5:
-                    ic[inm] = 1
-            score[icoord] = int(np.where(ic == np.nanmax(ic))[0][0])
-
-            best_field[icoord] = field[int(score[icoord]), icoord]
-            best_field2[icoord] = field2[int(score[icoord]), icoord]
-
-    return (
-        score.reshape(dimlat, dimlon),
-        best_field.reshape(dimlat, dimlon),
-        best_field2.reshape(dimlat, dimlon),
-    )
-
+from utils_SLB import sel_best_NM, make_cmapnm
+cmapnm = make_cmapnm()
 
 #%%
-def add_attrs(
-    ds, variables=["lat", "lon"], latname="lat", lonname="lon", depthname="depth"
-):
-    if "lat" in variables:
-        ds[latname].attrs = {
-            "axis": "Y",
-            "long_name": "latitude",
-            "standard_name": "latitude",
-            "unit_long": "degrees north",
-            "units": "degrees_north",
-        }
-    if "lon" in variables:
-        ds[lonname].attrs = {
-            "axis": "X",
-            "long_name": "longitude",
-            "standard_name": "longitude",
-            "step": 0.25,
-            "unit_long": "degrees east",
-            "units": "degrees_east",
-        }
-    if "depth" in variables:
-        ds[depthname].attrs = {
-            "axis": "Z",
-            "long_name": "depth",
-            "positive": "down",
-            "standard_name": "depth",
-            "unit_long": "meter",
-            "units": "m",
-        }
-
-    return
-
-
-#%%
-
-from matplotlib.colors import ListedColormap
-
-# Let's also design our color mapping: 1s should be plotted in blue, 2s in red, etc...
-col_dict = {
-    1: "black",  # WN
-    2: "palegoldenrod",  # PL
-    3: "lightpink",  # PLWN
-    4: "orange",  # AR1
-    5: "teal",  # Ar5
-    6: "darkmagenta",  # AR9
-    7: "skyblue",  # ARf
-    8: "crimson",  # GGM
-}
-
-# We create a colormar from our list of colors
-cmapnm = ListedColormap([col_dict[x] for x in col_dict.keys()])
-#%%
-plot = False
+plot = True
 new_vars = ["NM_score", "best_trend", "best_unc"]
 variables = ["trend", "unc"]
 
@@ -119,39 +31,21 @@ periods = [(1993, 2017)]
 for ip, period in enumerate(periods):
     t0, t1 = period
 
-    path = "/Volumes/LaCie_NIOZ/data/altimetry/trends/{}-{}/".format(t0, t1)
-
-    flist = [file for file in os.listdir(path) if file.split("_")[1] == "ENS"]
-    nm = []
-    cmap = cm.cm.balance
-    clim = 5000
-    cmin = -clim
-    cmax = clim
-    cmap2 = cm.tools.crop(cmap, 0, cmax, 0)
-    for file in flist:
-        ds = xr.open_dataset(path + file)
-        if plot:
-            fig = plt.figure(dpi=300, figsize=(15, 5))
-            ax = plt.subplot(121)
-            ds = ds.where((ds.lat >= -66) & (ds.lat <= 66), np.nan)
-            ds.trend.plot(vmin=cmin, vmax=cmax, ax=ax, cmap=cmap)
-            # plt.show()
-            ax = plt.subplot(122)
-            ds.unc.plot(vmin=0, vmax=cmax, ax=ax, cmap=cmap2)
-            plt.show()
-        nm.append(np.array(ds.nm))
-    if len(nm) != 8:
-        print("Missing Noise Model !!!!!")
-
+    path = "/Volumes/LaCie_NIOZ/data/dynamicREA/trends/{}-{}/".format(t0, t1)
     #% % plottrend an unc for all noise models
-    ds = xr.open_dataset(path + "ALT_ENS.nc")
+    ds = xr.open_dataset(path + "ens_dyn_v1.nc")
     ds = ds.where((ds.lat >= -66) & (ds.lat <= 66), np.nan)
+    clim=5
+    cmin=-clim;cmax=clim
+    cmap=cm.cm.balance
+    cmap2 = cm.tools.crop(cmap, 0, cmax, 0)
+
     if plot:
         ds.trend.plot(col="nm", col_wrap=4, vmin=cmin, vmax=cmax, cmap=cmap)
         plt.show()
         ds.unc.plot(col="nm", col_wrap=4, vmin=0, vmax=cmax, cmap=cmap2)
         plt.show()
-
+    nm = np.array(ds.nm)
     #% % select best noise model
     inds = ["aic", "bic", "bic_c", "bic_tp"]
     scores = np.zeros((len(periods), len(inds), len(ds.lat), len(ds.lon)))
@@ -164,11 +58,6 @@ for ip, period in enumerate(periods):
         )
         #% %
         if plot:
-            cmap = cm.cm.balance
-            clim = 5
-            cmin = -clim
-            cmax = clim
-            cmap2 = cm.tools.crop(cmap, 0, cmax, 0)
 
             plt.figure(figsize=(20, 10))
             nrow = 2
@@ -185,20 +74,20 @@ for ip, period in enumerate(periods):
             plt.title("NM selection - {}".format(ind), fontsize=20)
 
             plt.subplot(nrow, ncol, 2)
-            plt.pcolor(best_trend / 1000, vmin=cmin, vmax=cmax, cmap=cmap)
+            plt.pcolor(best_trend, vmin=cmin, vmax=cmax, cmap=cmap)
             cbar = plt.colorbar()
             cbar.set_label(label="mm/yr", fontsize=15)
             plt.title("Trend", fontsize=20)
 
             plt.subplot(nrow, ncol, 3)
-            plt.pcolor(best_unc / 1000, vmin=0, vmax=cmax, cmap=cmap2)
+            plt.pcolor(best_unc , vmin=0, vmax=cmax, cmap=cmap2)
             cbar = plt.colorbar()
             cbar.set_label(label="mm/yr", fontsize=15)
             plt.title("Unc", fontsize=20)
 
             plt.subplot(nrow, ncol, 4)
             plt.pcolor(
-                (ds.sel(nm="AR1").trend / 1000) - (best_trend / 1000),
+                (ds.sel(nm="AR1").trend) - (best_trend),
                 vmin=-1,
                 vmax=1,
                 cmap=cm.cm.curl,
@@ -234,16 +123,16 @@ for ip, period in enumerate(periods):
         new_var = "{}_{}-{}".format(var, t0, t1)
         da[new_var] = ds[var] / 1000
         new_vars.append(new_var)
-#%%
+#% %
 for var in new_vars:
     if var == "NM_score":
         da[var].attrs["units"] = "noise model number"
     else:
         da[var].attrs["units"] = "mm/yr"
-da.attrs["metadata"] = "Altimetry ENS Trends and uncertainties computed with Hector"
+da.attrs["metadata"] = "Dynamic REA ENS Trends and uncertainties computed with Hector"
 
 
 path_save = "/Volumes/LaCie_NIOZ/data/budget/trends/"
-da.to_netcdf(path_save + "alt.nc")
+da.to_netcdf(path_save + "dynamic.nc")
 
 #%%

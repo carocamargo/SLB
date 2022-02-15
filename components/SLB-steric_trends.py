@@ -28,12 +28,12 @@ for i, period in enumerate(periods):
 
 dx = xr.Dataset(
     data_vars={
-        "unc": (("names", "period", "lat", "lon"), unc),
-        "trend_up": (("names", "period", "lat", "lon"), trend),
+        "unc": (("names", "periods", "lat", "lon"), unc),
+        "trend_up": (("names", "periods", "lat", "lon"), trend),
     },
     coords={
         "names": np.array(ds.fname),
-        "period": periods,
+        "periods": periods,
         "lat": ds.lat,
         "lon": ds.lon,
     },
