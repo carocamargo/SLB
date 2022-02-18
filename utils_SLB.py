@@ -7,6 +7,13 @@ Created on Mon Feb 14 12:27:04 2022
 """
 
 
+def get_dectime(time):
+    from datetime import datetime
+    import numpy as np
+    t = [datetime.utcfromtimestamp((t- np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')) 
+         for t in time]
+    t = [t.timetuple().tm_year + (t.timetuple().tm_yday/365) for t in t]
+    return np.array(t)
 #%%
 def sel_best_NM(IC, field, field2):
     import numpy as np
@@ -328,7 +335,8 @@ def plot_map_subplots( datasets,
              sig=False,
              unc=0.3,
               fontsize=20,
-              offset_y=0
+              offset_y=0,
+              nrow=False,ncol=False,
              ) :
     '''
     plot different variabls (ublots). Datasets is a list of data to be ploted
@@ -340,16 +348,21 @@ def plot_map_subplots( datasets,
 
     lon[-1]=360
     ndata = len(datasets)
-    if ndata>2:
-        if ndata%2==1:
-            ncol = round(ndata/2)
-            nrow = ndata - ncol +1
+    if not nrow:
+        if ndata>2:
+            if ndata%2==1:
+                ncol = round(ndata/2)
+                nrow = ndata - ncol +1
+            else:
+                nrow = ndata/2
+                ncol = nrow
         else:
-            nrow = ndata/2
-            ncol = nrow
-    else:
-        nrow=1;ncol=2
-    fig = plt.figure(figsize=(15,10),dpi=100)
+            nrow=1;ncol=2
+    fig = plt.figure(figsize=fsize,dpi=100)
+    
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+
     if proj=='robin':
         proj=ccrs.Robinson(central_longitude=lon0)
     else:
