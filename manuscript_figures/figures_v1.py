@@ -946,15 +946,16 @@ for ic,dataset in enumerate(combs):
         # print(budgets[ib])
         # print(matrix[ic,ib])
         # print('')
-
-df= pd.DataFrame(matrix,columns=budgets, index=combos)
+#%%
+df= pd.DataFrame(matrix,columns=['1deg','som','dmap'], 
+                 index=['steric, barystatic, dynamic', 'steric, barystatic', 'steric up, barystatic'])
 # df['combination']=combos
 print(df)
 #%%
-fig = plt.figure()
+fig = plt.figure(dpi=300)
 ax = plt.subplot(111)
 df.plot.bar(rot=15,ax=ax).legend(loc='lower right')
-ax.set_ylabel('% closed budget')
+plt.ylabel('% closed budget')
 plt.show()
 #%%
 fig = plt.figure()
@@ -999,13 +1000,54 @@ for ipos in range(n_pos):
         else:
             cluster_combos_sig[i,ipos] = 1 # 1 if open
 #%% plot
-plt.figure()
+plt.figure(dpi=300)
 ax=plt.subplot(111)
+alpha=0.1
 x=range(n_clusters)
 for ipos in range(n_pos):
     if np.any(np.isfinite(cluster_combos_res[:,ipos])):
-        sc=plt.scatter(x,cluster_combos_res[:,ipos],c=cluster_combos_sig[:,ipos],alpha=0.5)
-plt.colorbar(sc)
+        col = ['salmon' if sig==1 else 'mediumslateblue' for sig in cluster_combos_sig[:,ipos]]
+        sc=plt.scatter(x,cluster_combos_res[:,ipos],
+                        c=col,
+                        # c=cluster_combos_sig[:,ipos],
+                       alpha=alpha/2)
+
+# plot just one to get lengend
+ind=np.where(cluster_combos_sig[:,ipos]==1)[0][0]
+plt.scatter(x[ind],cluster_combos_res[ind,ipos],
+            c=col[ind],
+            alpha=alpha,label='open')
+ind=np.where(cluster_combos_sig[:,ipos]==0)[0][0]
+plt.scatter(x[ind],cluster_combos_res[ind,ipos],
+            c=col[ind],
+            alpha=alpha,label='closed')
+
+## ENS
+names = np.array(da.names)
+ipos =[]
+ipos = [i for i in range(len(da.comb)) if np.all(names[i,:]==['ENS'])][0]
+plt.scatter(x,cluster_combos_res[:,ipos],
+            # c='black',
+            marker='s',
+            c = ['salmon' if sig==1 else 'mediumslateblue' for sig in cluster_combos_sig[:,ipos]],
+            # label='ENS'
+            )
+ind=np.where(cluster_combos_sig[:,ipos]==1)[0][0]
+plt.scatter(x[ind],cluster_combos_res[ind,ipos],
+            marker='s',
+            c=col[ind],
+            # alpha=alpha,
+            label='ENS - open')
+ind=np.where(cluster_combos_sig[:,ipos]==0)[0][0]
+plt.scatter(x[ind],cluster_combos_res[ind,ipos],
+            c=col[ind],
+            marker='s',
+            # alpha=alpha,
+            label='ENS - closed')
+plt.legend(ncol=2)
 plt.ylabel('Residual trend mm/yr')
 plt.xlabel('SOM cluster number')
+
+#%%
+
 
