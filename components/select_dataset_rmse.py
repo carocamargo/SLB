@@ -80,8 +80,13 @@ for comp in comps:
         ds=xr.open_dataset(path+file)
         ds=ds.SLF_ASL
         ds = ds.where((ds.lat>-66) & (ds.lat<66),np.nan)
+        recs = [r for r in np.array(ds.reconstruction)]
+        if int(y0)<2002:
+            recs.remove('JPL')
+            recs.remove('CSR')
+        ds = ds.sel(reconstruction=recs)
         names=np.array(ds.reconstruction)
-        ind= np.where(ds.reconstruction=='ENS')[0][0] # index of the ensemble
+        ind = np.where(ds.reconstruction=='ENS')[0][0] # index of the ensemble
         idx = np.arange(0,len(ds.reconstruction)) # all the index
         idx = np.delete(idx,ind)
         da = ds

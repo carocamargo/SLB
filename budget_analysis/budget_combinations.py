@@ -23,9 +23,9 @@ file = comp+'.nc'
 ds=xr.open_dataset(path+file)
 ds = ds.sel(periods=period)
 idx = np.where(ds.ICs =='bic_tp')[0][0]
-alt_trends = np.array(ds.best_trend[:,idx,:,:])
-alt_uncs = np.array(ds.best_unc[:,idx,:,:])
-alt_names = ['ENS']
+alt_trends = np.array(ds.best_trend[:,:,idx,:,:])
+alt_uncs = np.array(ds.best_unc[:,:,idx,:,:])
+alt_names = np.array(ds.names)
 
 #%% dyn
 comp = 'dynamic'
@@ -49,14 +49,20 @@ comp = 'barystatic'
 file = comp+'.nc'
 ds=xr.open_dataset(path+file)
 ds = ds.sel(periods=period)
+recs = [r for r in np.array(ds.names)]
+if int(y0)<2002:
+    recs.remove('JPL')
+    recs.remove('CSR')
+ds = ds.sel(names=recs)
 ds = ds.where((ds.lat>-66) & (ds.lat<66),np.nan)
 bar_trends = np.array(ds.SLA[:,0,:,:])
 bar_uncs = np.array(ds.SLA_UNC[:,0,:,:])      
 bar_names = np.array(ds.names)
 
 #%%
-n_pos = alt_trends.shape[0] * ste_trends.shape[0] * bar_trends.shape[0] * dyn_trends.shape[0]
-res = np.zeros((n_pos,alt_trends.shape[1],alt_trends.shape[2]))
+_,_,dimlat,dimlon = alt_trends.shape
+n_pos = len(alt_names) * len(ste_names) * len(bar_names) * len(dyn_names)
+res = np.zeros((n_pos,dimlat,dimlon))
 unc = np.full_like(res,0)
 
 ipos=0
@@ -77,7 +83,7 @@ for ialt in range(alt_trends.shape[0]):
                 unc[ipos] = np.array(
                     np.sqrt(
                     np.abs(
-                                alt_uncs[ialt]**2 - 
+                                alt_uncs[ialt]**2 + 
                                 (ste_uncs[iste]**2 + 
                                 bar_uncs[ibar]**2 + 
                                 dyn_uncs[idyn]**2 ))
@@ -86,7 +92,7 @@ for ialt in range(alt_trends.shape[0]):
 
 da = xr.Dataset(data_vars = {'res':(('comb','lat','lon'),res),
                              'unc':(('comb','lat','lon'),unc),
-                             'names':(('combs','dataset'),names)
+                             'names':(('comb','dataset'),names)
                              },
                 coords={'comb':combs,
                         'dataset':['alt','ste','bar','dyn'],

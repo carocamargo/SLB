@@ -6,7 +6,104 @@ Created on Mon Feb 14 12:27:04 2022
 @author: ccamargo
 """
 
+def agree_test(a,a_sig,b,b_sig):
+    '''
+    Do measurmenets agree within uncertaities?
+    1 = agree
+    0 = disagree
 
+    Parameters
+    ----------
+    a : TYPE
+        DESCRIPTION.
+    a_sig : TYPE
+        DESCRIPTION.
+    b : TYPE
+        DESCRIPTION.
+    b_sig : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    agree : TYPE
+        DESCRIPTION.
+
+    '''
+    
+    if  a + a_sig > b - b_sig and a - a_sig < b + b_sig:
+        agree = 1
+    else:
+        agree = 0  
+    
+    return agree
+
+#%%
+def zeta_test(a,a_sig,b,b_sig):
+    '''
+    Test whether values agree acocoridng to zeta test
+    1 = agree
+    0 = disagree
+    0.5 = tension zone
+
+    Parameters
+    ----------
+    a : TYPE
+        DESCRIPTION.
+    a_sig : TYPE
+        DESCRIPTION.
+    b : TYPE
+        DESCRIPTION.
+    b_sig : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    score : TYPE
+        DESCRIPTION.
+
+    '''
+    import numpy as np
+    zeta = np.abs( 
+        (a-b)/ (np.sqrt(a_sig**2 + b_sig**2))
+        )
+    
+    if zeta < 1:
+        score = 1 
+    elif 1 < zeta <3:
+        score = 0.5
+    else:
+        score = 0
+    return score
+
+
+#%% 
+def unc_test(a,a_sig,b,b_sig, method = 'square', how = 'sum'):
+    import numpy as np
+    res = np.array(a - b)
+    if method =='square':
+        if how =='sum':
+            res_unc = np.sqrt( a_sig**2 + b_sig**2)  
+        elif how =='subtract':
+            res_unc= np.sqrt(a_sig**2 - b_sig**2)
+        else:
+            raise('Method not recongized')
+    elif method =='linear':
+        if how =='sum':
+            res_unc = np.array(a_sig + b_sig) 
+        elif how =='subtract':
+            res_unc= np.array(a_sig - b_sig) 
+        else:
+            raise('Method not recongized')   
+    else:
+        raise ('Method not recognized')
+        
+    if np.abs(res) < res_unc:
+        agree = 1
+    else:
+        agree = 0
+        
+    return agree
+#%%
 def get_dectime(time):
     from datetime import datetime
     import numpy as np

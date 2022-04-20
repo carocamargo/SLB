@@ -115,134 +115,141 @@ new_vars = ["NM_score", "best_trend", "best_unc"]
 variables = ["trend", "unc"]
 
 periods = [(1993, 2017)]
+datasets = ['ENS', 'csiro','cmems','aviso',
+            # 'measures', 'slcci'
+            ]
+inds = ["aic", "bic", "bic_c", "bic_tp"]
+dimlat=180;dimlon=360
+scores = np.zeros((len(datasets),len(periods), len(inds), dimlat, dimlon))
+best_trends = np.full_like(scores, 0)
+best_uncs = np.full_like(scores, 0)
+
 for ip, period in enumerate(periods):
     t0, t1 = period
 
     path = "/Volumes/LaCie_NIOZ/data/altimetry/trends/{}-{}/".format(t0, t1)
-
-    flist = [file for file in os.listdir(path) if file.split("_")[1] == "ENS"]
-    nm = []
-    cmap = cm.cm.balance
-    clim = 5000
-    cmin = -clim
-    cmax = clim
-    cmap2 = cm.tools.crop(cmap, 0, cmax, 0)
-    for file in flist:
-        ds = xr.open_dataset(path + file)
+    for iname,name in enumerate(datasets):
+        flist = [file for file in os.listdir(path) if file.split("_")[1] == name]
+        nm = []
+        cmap = cm.cm.balance
+        clim = 5000
+        cmin = -clim
+        cmax = clim
+        cmap2 = cm.tools.crop(cmap, 0, cmax, 0)
+        for file in flist:
+            ds = xr.open_dataset(path + file)
+            if plot:
+                fig = plt.figure(dpi=300, figsize=(15, 5))
+                ax = plt.subplot(121)
+                ds = ds.where((ds.lat >= -66) & (ds.lat <= 66), np.nan)
+                ds.trend.plot(vmin=cmin, vmax=cmax, ax=ax, cmap=cmap)
+                # plt.show()
+                ax = plt.subplot(122)
+                ds.unc.plot(vmin=0, vmax=cmax, ax=ax, cmap=cmap2)
+                plt.show()
+            nm.append(np.array(ds.nm))
+        if len(nm) != 8:
+            print("Missing Noise Model !!!!!")
+    
+        #% % plottrend an unc for all noise models
+        ds = xr.open_dataset(path + "ALT_{}.nc".format(name))
+        ds = ds.where((ds.lat >= -66) & (ds.lat <= 66), np.nan)
         if plot:
-            fig = plt.figure(dpi=300, figsize=(15, 5))
-            ax = plt.subplot(121)
-            ds = ds.where((ds.lat >= -66) & (ds.lat <= 66), np.nan)
-            ds.trend.plot(vmin=cmin, vmax=cmax, ax=ax, cmap=cmap)
-            # plt.show()
-            ax = plt.subplot(122)
-            ds.unc.plot(vmin=0, vmax=cmax, ax=ax, cmap=cmap2)
+            ds.trend.plot(col="nm", col_wrap=4, vmin=cmin, vmax=cmax, cmap=cmap)
             plt.show()
-        nm.append(np.array(ds.nm))
-    if len(nm) != 8:
-        print("Missing Noise Model !!!!!")
-
-    #% % plottrend an unc for all noise models
-    ds = xr.open_dataset(path + "ALT_ENS.nc")
-    ds = ds.where((ds.lat >= -66) & (ds.lat <= 66), np.nan)
-    if plot:
-        ds.trend.plot(col="nm", col_wrap=4, vmin=cmin, vmax=cmax, cmap=cmap)
-        plt.show()
-        ds.unc.plot(col="nm", col_wrap=4, vmin=0, vmax=cmax, cmap=cmap2)
-        plt.show()
-
-    #% % select best noise model
-    inds = ["aic", "bic", "bic_c", "bic_tp"]
-    scores = np.zeros((len(periods), len(inds), len(ds.lat), len(ds.lon)))
-    best_trends = np.full_like(scores, 0)
-    best_uncs = np.full_like(scores, 0)
-
-    for i, ind in enumerate(inds):
-        score, best_trend, best_unc = sel_best_NM(
-            np.array(ds[ind]), np.array(ds.trend), np.array(ds.unc)
-        )
-        #% %
-        if plot:
-            cmap = cm.cm.balance
-            clim = 5
-            cmin = -clim
-            cmax = clim
-            cmap2 = cm.tools.crop(cmap, 0, cmax, 0)
-
-            plt.figure(figsize=(20, 10))
-            nrow = 2
-            ncol = 2
-
-            plt.subplot(nrow, ncol, 1)
-            plt.pcolor(score + 1, vmin=1, vmax=8, cmap=cmapnm)
-            cbar = plt.colorbar(  # ticks=np.arange(0.5,len(ds.nm)+0.5),
-                ##shrink=0.95,
-                # label='Preferred Noise Model',fontsize=15,
-                orientation="vertical"
-            )
-            cbar.ax.set_yticklabels(nm, fontsize=15)
-            plt.title("NM selection - {}".format(ind), fontsize=20)
-
-            plt.subplot(nrow, ncol, 2)
-            plt.pcolor(best_trend / 1000, vmin=cmin, vmax=cmax, cmap=cmap)
-            cbar = plt.colorbar()
-            cbar.set_label(label="mm/yr", fontsize=15)
-            plt.title("Trend", fontsize=20)
-
-            plt.subplot(nrow, ncol, 3)
-            plt.pcolor(best_unc / 1000, vmin=0, vmax=cmax, cmap=cmap2)
-            cbar = plt.colorbar()
-            cbar.set_label(label="mm/yr", fontsize=15)
-            plt.title("Unc", fontsize=20)
-
-            plt.subplot(nrow, ncol, 4)
-            plt.pcolor(
-                (ds.sel(nm="AR1").trend / 1000) - (best_trend / 1000),
-                vmin=-1,
-                vmax=1,
-                cmap=cm.cm.curl,
-            )
-            cbar = plt.colorbar()
-            cbar.set_label(label="dif", fontsize=15)
-            plt.title("AR1 trend- Best Trend", fontsize=20)
-
-            plt.tight_layout()
+            ds.unc.plot(col="nm", col_wrap=4, vmin=0, vmax=cmax, cmap=cmap2)
             plt.show()
+    
+        #% % select best noise model
+        
+    
+        for i, ind in enumerate(inds):
+            score, best_trend, best_unc = sel_best_NM(
+                np.array(ds[ind]), np.array(ds.trend), np.array(ds.unc)
+            )
+            #% %
+            if plot:
+                cmap = cm.cm.balance
+                clim = 5
+                cmin = -clim
+                cmax = clim
+                cmap2 = cm.tools.crop(cmap, 0, cmax, 0)
+    
+                plt.figure(figsize=(20, 10))
+                nrow = 2
+                ncol = 2
+    
+                plt.subplot(nrow, ncol, 1)
+                plt.pcolor(score + 1, vmin=1, vmax=8, cmap=cmapnm)
+                cbar = plt.colorbar(  # ticks=np.arange(0.5,len(ds.nm)+0.5),
+                    ##shrink=0.95,
+                    # label='Preferred Noise Model',fontsize=15,
+                    orientation="vertical"
+                )
+                cbar.ax.set_yticklabels(nm, fontsize=15)
+                plt.title("NM selection - {}".format(ind), fontsize=20)
+    
+                plt.subplot(nrow, ncol, 2)
+                plt.pcolor(best_trend / 1000, vmin=cmin, vmax=cmax, cmap=cmap)
+                cbar = plt.colorbar()
+                cbar.set_label(label="mm/yr", fontsize=15)
+                plt.title("Trend", fontsize=20)
+    
+                plt.subplot(nrow, ncol, 3)
+                plt.pcolor(best_unc / 1000, vmin=0, vmax=cmax, cmap=cmap2)
+                cbar = plt.colorbar()
+                cbar.set_label(label="mm/yr", fontsize=15)
+                plt.title("Unc", fontsize=20)
+    
+                plt.subplot(nrow, ncol, 4)
+                plt.pcolor(
+                    (ds.sel(nm="AR1").trend / 1000) - (best_trend / 1000),
+                    vmin=-1,
+                    vmax=1,
+                    cmap=cm.cm.curl,
+                )
+                cbar = plt.colorbar()
+                cbar.set_label(label="dif", fontsize=15)
+                plt.title("AR1 trend- Best Trend", fontsize=20)
+    
+                plt.tight_layout()
+                plt.show()
+    
+            scores[iname,ip, i] = score
+            best_trends[iname,ip, i] = best_trend
+            best_uncs[iname,ip, i] = best_unc
 
-        scores[ip, i] = score
-        best_trends[ip, i] = best_trend
-        best_uncs[ip, i] = best_unc
-
-    #% % add data to dataset
-    if ip == 0:
-        da = xr.Dataset(
-            data_vars={
-                "NM_score": (("periods", "ICs", "lat", "lon"), scores),
-                "best_trend": (("periods", "ICs", "lat", "lon"), best_trends/1000),
-                "best_unc": (("periods", "ICs", "lat", "lon"), best_uncs/1000),
-            },
-            coords={
-                "ICs": inds,
-                "lat": ds.lat,
-                "lon": ds.lon,
-                "nm": ds.nm,
-                "periods": ["{}-{}".format(period[0], period[1]) for period in periods],
-            },
-        )
-    for var in variables:
-        new_var = "{}_{}-{}".format(var, t0, t1)
-        da[new_var] = ds[var] / 1000
-        new_vars.append(new_var)
-#%%
-for var in new_vars:
-    if var == "NM_score":
-        da[var].attrs["units"] = "noise model number"
-    else:
-        da[var].attrs["units"] = "mm/yr"
-da.attrs["metadata"] = "Altimetry ENS Trends and uncertainties computed with Hector"
+da = xr.Dataset(
+    data_vars={
+        "NM_score": (("names","periods", "ICs", "lat", "lon"), scores),
+        "best_trend": (("names","periods", "ICs", "lat", "lon"), best_trends/1000),
+        "best_unc": (("names","periods", "ICs", "lat", "lon"), best_uncs/1000),
+    },
+    coords={
+        "ICs": inds,
+        "lat": ds.lat,
+        "lon": ds.lon,
+        "nm": ds.nm,
+        "names":datasets,
+        "periods": ["{}-{}".format(period[0], period[1]) for period in periods],
+    },
+)
+# for var in variables:
+#     new_var = "{}_{}-{}".format(var, t0, t1)
+#     da[new_var] = ds[var] / 1000
+#     new_vars.append(new_var)
+# #% %
+# for var in new_vars:
+#     if var == "NM_score":
+#         da[var].attrs["units"] = "noise model number"
+#     else:
+#         da[var].attrs["units"] = "mm/yr"
+da.attrs["metadata"] = "Altimetry Trends and uncertainties computed with Hector"
 
 
 path_save = "/Volumes/LaCie_NIOZ/data/budget/trends/"
+
+# da['best_trend'][:,0,0,:,:].plot(col='names',col_wrap=2,vmin=0,vmax=8)
 da.to_netcdf(path_save + "alt.nc")
 
 #%%
